@@ -1,15 +1,14 @@
-<!--
-# Commands in VSC:
-    To multiline comment: Ctrl + K + C
-    To multiline uncomment: Ctrl + K + U
-    To block comment:  Shift + Alt + A
--->
+# TrustifyOpenPayments
 
-# PSD2Demo
+- There were three main goals with this application. Firstly, to show customers/companies possible use cases of Open Payment's API. Secondly, to give insight in the API's account and payment procedures. Thirdly, to learn the best practices of user-first approach, scalablity and security. These goals were reached by displaying dynamic content to the user in the front-end, setting up secure and modular environments, and implementing user-friendly functionalities such as a light/dark mode and session-based processes.
 
-- The two goals of this app is to show customers/companies one possible use case of Open Payment's API and to give insight into how the API's payment procedure looks like. This will be done by displaying status messages, interactive elements and a loading icon in the frontend.
+## Getting started
 
-## Get started
+0. Prerequisites:
+
+   - **A terminal such as: Git Bash**
+
+   - **A package manager such as: NPM**
 
 1. Navigate into the backend folder:
 
@@ -24,24 +23,30 @@
    - **npm run dev**
 
 ## Frontend - User Interface
+
 ### Landing page
+
 <img width="1100" src="readmeImages/readmePreview.png"/>
 
 ### Landing page - Dark Mode
+
 <img width="1100" src="readmeImages/readmePreviewDarkMode.png "/>
 
 ### Cart page
+
 <img width="1100" src="readmeImages/readmePreview2.png"/>
 
 ### Payment flow
+
 <img width="350" src="readmeImages/readmePreview7.png"/> <img width="350" src="readmeImages/readmePreview8.png"/>
 
 ### API page
+
 <img width="1100" src="readmeImages/readmePreview5.png"/>
 
 ### AIS page
-<img width="1100" src="readmeImages/readmePreview6.png"/>
 
+<img width="1100" src="readmeImages/readmePreview6.png"/>
 
 ## Preview of responsiveness
 
@@ -57,12 +62,6 @@ A complete route between client and server is:
 
 - For instance: http://localhost:5000/connect/token. However, the part 'http://localhost:5000' is left out and handled by the package.json (proxy) from the frontend folder:
 - "proxy": "http://localhost:5000"
-
-## Content related to PSD2:
-
-##### DN - Publicerad 2020-05-05 - Nytt EU-direktiv kan göra kreditprövningen säkrare redan nu.
-
-`Med ett medgivande från kunden kan kreditgivaren hämta hem transaktionsdata från kundens bankkonto och se vad kunden har för inkomst, tillgångar, andra lån/skulder samt utgiftsmönster. Kreditgivaren kan också få information om ifall slutkunden ägnar sig åt alltför mycket spelande i relation till sin inkomst. Andra riskdrivare kan också identifieras och senare översättas till ett ekonomiskt betyg som kreditgivaren kan använda som ett underlag till akten för kreditbeslutet.` <br> https://www.dn.se/debatt/nytt-eu-direktiv-kan-gora-kreditprovningen-sakrare-redan-nu/
 
 ##### Tutorial link to Open Payments API - How to get started.
 
