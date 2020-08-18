@@ -1,0 +1,51 @@
+/* We could use Node Sass instead. But since we are using custom styled components - we want to use custom variables from CSS */
+:root {
+  --mainBlue: #1d2937;
+  --lightBlue: #009ffd;
+  --mainWhite: #f3f3f3; /*  181818 */
+  --mainDark: #232528;
+  --mainYellow: #f8b83f;
+  --secondaryYellow: #f69b25;
+}
+
+html {
+  overflow-x: hidden;
+  min-height: 100vh !important;
+}
+body {
+  font-family: "Oswald", sans-serif !important; /* Important to overwrite Bootstrap */
+  background: var(--mainWhite) !important;
+  color: var(--mainDark) !important;
+  min-height: 100vh !important;
+}
+
+.text-title {
+  font-family: "Candara"; /* Palatino */
+  letter-spacing: 0.3rem;
+  text-transform: uppercase;
+}
+.text-blue {
+  color: var(--mainBlue);
+}
+.text-bright {
+  color: var(--lightBlue);
+}
+.btn-black {
+  background: transparent;
+  text-transform: capitalize;
+  font-size: 0.8rem !important;
+  color: var(--mainDark);
+  border-radius: 0 !important;
+  border: 0.1rem solid var(--mainDark) !important;
+}
+
+.btn-black:hover {
+  background: var(--mainDark) !important;
+  color: var(--mainWhite) !important;
+}
+
+.cart-icon {
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--mainYellow);
+}

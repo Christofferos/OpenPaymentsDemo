@@ -1,0 +1,742 @@
+@startuml
+
+skinparam shadowing false
+skinparam tabSize 2
+
+title Payment Process Flow - Demonstration Application\n
+header Defined Variables: {...}\n Response String: '...'
+
+' TPP might be an E-Commerce company. Ask if it can be anything else.
+actor "Payment Services\nUser" as psu
+participant "Third Party Provider\nFrontend" as tppFrontend
+participant "Third Party Provider\nBackend" as tpp
+database "Open Banking Platform\nAPI" as obpapi
+database "Open Banking Platform\nAuth" as obpauth
+database "ASPSP\nBank" as aspsp
+
+' Display diagram in Visual Studio Code: Alt + D
+
+psu -> tppFrontend: **0_A. Navigate to**\n        **payment page**
+activate psu
+rnote right of psu
+**Action**: 
+"Start Payment" button is 
+pressed by the user
+endrnote
+activate tppFrontend
+rnote left of tppFrontend
+**Result**:
+A new page is rendered
+on route /payment
+endrnote
+deactivate psu
+deactivate tppFrontend
+
+|||
+
+
+tppFrontend -> tpp: **0_B. Initiate ASPSP API**
+activate tppFrontend
+rnote right of tppFrontend
+Happens when page 
+has been rendered
+endrnote
+activate tpp
+deactivate tppFrontend
+deactivate tpp
+rnote left of tpp
+endrnote
+
+|||
+
+'1. Done at page load.
+tpp -> obpauth: **1. Request ASPSP Information Token**\nPOST /connect/token
+activate tpp
+rnote right of tpp
+B: client_id = {client_id}
+B: client_secret = {client_secret}
+B: grant_type = 'client_credentials'
+B: scope = 'aspspinformation private'
+endrnote
+activate obpauth
+|||
+obpauth --> tpp:
+deactivate obpauth
+deactivate tpp
+rnote left of obpauth
+HTTP Response Status: 200 OK
+B: access_token = '...'
+B: expires_in = '3600'
+B: token_type = 'Bearer'
+B: scope = 'aspspinformation private'
+
+**SET**: {aspspInformationBearerToken} = access_token
+endrnote
+
+'2_A. Done at page load.
+tpp -> obpapi: **2_A. Get ASPSP List**\nGET /psd2/aspspinformation/v1/aspsps
+activate tpp
+rnote right of tpp
+H: Authorization = 'Bearer' + {access_token}
+H: X-Request-ID = {Globally Unique Identifier}
+endrnote
+activate obpapi
+|||
+obpapi --> tpp:
+deactivate obpapi
+deactivate tpp
+rnote left of obpapi
+HTTP Response Status: 200 OK
+H: X-Request-ID = '...'
+B: aspspList (Object)
+
+**SET**: {bicFi} = aspspList[0].bicFi
+endrnote
+
+
+'|||
+
+
+tpp -> tppFrontend: **2_B. Retrive ASPSP List**
+activate tppFrontend
+rnote right of tppFrontend
+ASPSP logos are displayed 
+endrnote
+activate tpp
+deactivate tppFrontend
+deactivate tpp
+
+
+|||
+
+
+tppFrontend -> psu: **2_C. Select an ASPSP**
+activate tppFrontend
+activate psu
+rnote right of psu
+**Action:**
+User selected a ASPSP
+endrnote
+|||
+psu --> tppFrontend:
+rnote left of tppFrontend
+**Result:**
+Re-render page and display
+input field for account number
+endrnote
+deactivate tppFrontend
+deactivate psu
+
+
+|||
+
+
+tppFrontend -> psu: **2_D. Input bank account** \n        **number**
+activate tppFrontend
+activate psu
+rnote right of psu
+**Action:**
+User wrote an 
+account number
+endrnote
+|||
+psu --> tppFrontend:
+deactivate tppFrontend
+deactivate psu
+rnote left of tppFrontend
+**Result:**
+Re-render page, display
+loading spinner and text
+"Payment Initiated ..."
+endrnote
+
+
+|||
+
+
+tppFrontend -> tpp: **2_E. Initiate APIs:** \n           ASPSP, \n           CONSENT, \n           AIS.
+activate tppFrontend
+activate tpp
+deactivate tppFrontend
+deactivate tpp
+rnote left of tpp
+Send selected ASPSP id  
+and bank account number
+endrnote
+
+|||
+
+'3. Executed when the USER selects a given bank.
+tpp -> obpapi: **3. Get ASPSP Details**\nGET /psd2/aspspinformation/v1/aspsps/{{bicFi]}
+activate tpp
+rnote right of tpp
+Q: bicFi = {bicFi}
+H: Authorization = 'Bearer' + {access_token}
+H: X-Request-ID = {Globally Unique Identifier}
+endrnote
+activate obpapi
+|||
+obpapi --> tpp:
+deactivate obpapi
+deactivate tpp
+rnote left of obpapi
+HTTP Response Status: 200 OK
+H: X-Request-ID = '...'
+B: aspsp (Object)
+
+    LOOK FOR FIELD:
+    * supportedAuthorizationMethods
+        * name: Decoupled | OAuth2 
+        * uri: ' ' | 'https://...'
+    
+**SET**: {sca-approach} = name, 
+        {redirectUri} = uri
+endrnote
+
+
+
+'4. Promt the USER to input bank account number.
+' Get CONSENT TOKEN
+tpp -> obpapi: **4_A. Request Account Information token**\nPOST /connect/token
+activate tpp
+rnote right of tpp
+B: client_id = {client_id}
+B: client_secret = {client_secret}
+B: grant_type = 'client_credentials'
+B: scope = 'accountinformation private'
+endrnote
+activate obpapi
+|||
+obpapi --> tpp:
+deactivate obpapi
+deactivate tpp
+rnote left of obpapi
+HTTP Response Status: 200 OK
+B: access_token = '...'
+B: expires_in = '3600'
+B: token_type = 'Bearer'
+B: scope = 'accountinformation private'
+
+**SET**: {accountBearerToken} = access_token
+endrnote
+
+
+tpp -> tppFrontend: **4_B. Show message** \n        **'Starting Consent**\n          **Process'**
+activate tppFrontend
+activate tpp
+|||
+tppFrontend -> tpp
+deactivate tppFrontend
+deactivate tpp
+
+|||
+|||
+
+
+
+' Create Consent
+tpp -> obpapi: **5. Create Consent**\nPOST /psd2/consent/v1/consents
+activate tpp
+rnote right of tpp
+H: Authorization = 'Bearer' + {paymentBearerToken}
+H: X-Request-ID = {Globally Unique Identifier}
+H: X-BicFi = {bicFi}
+H: PSU-IP-Address = {PSU-IP-Address}
+B: access = {}
+B: recurringIndicator = {consentRecurringIndicator}
+B: validUntil = {consentValidUntil}
+B: frequencyPerDay = {consentFrequencyPerDay}
+B: combinedServiceIndicator = {consentCombinedServiceIndicator}
+endrnote
+activate obpapi
+|||
+obpapi --> tpp:
+deactivate obpapi
+deactivate tpp
+rnote left of obpapi
+HTTP Response Status: 200 OK
+H: aspsp-sca-approach = 'REDIRECT'
+H: X-Request-ID = '...'
+B: consentStatus = 'recieved'
+B: consentId = '...'
+B: scaMethods (Object)
+B: _links (Object)
+
+**SET**: {consentId} = consentId
+endrnote
+
+
+' Start Consent Authorization Process
+tpp -> obpapi: **6_A. Start Consent Authorization Process**\nPOST /psd2/consent/v1/consents/{{consentId}}/authorisations
+activate tpp
+rnote right of tpp
+Q: consentId = {consentId}
+H: Authorization = 'Bearer' + {paymentBearerToken}
+H: X-Request-ID = {Globally Unique Identifier}
+H: X-BicFi = {bicFi}
+H: PSU-IP-Address = {PSU-IP-Address}
+endrnote
+activate obpapi
+|||
+obpapi --> tpp:
+deactivate obpapi
+deactivate tpp
+rnote left of obpapi
+HTTP Response Status: 200 OK
+H: aspsp-sca-approach = 'REDIRECT'
+H: X-Request-ID = '...'
+B: authorisationId = '...'
+B: scaMethods (Object)
+B: _links (Object)
+B: scaStatus: 'recieved'
+
+**SET**: {consentAuthorisationId} = consentAuthorisationId, 
+        {authenticationMethodId} = scaMethods[0].authenticationMethodId
+endrnote
+
+
+tpp -> tppFrontend: **6_B. Show message** \n        **'Starting**\n         **Authorization'**
+activate tppFrontend
+activate tpp
+|||
+tppFrontend -> tpp
+deactivate tppFrontend
+deactivate tpp
+
+
+|||
+
+
+' Update PSU Data for Consent
+tpp -> obpapi: **7. Update PSU Data for Consent**\nPUT /psd2/consent/v1/consents/{{consentId}}/authorisations/{{consentAuthorisationId}}
+activate tpp
+rnote right of tpp
+Q: consentId = {consentId}
+Q: consentAuthorisationId = {consentAuthorisationId}
+H: Authorization = 'Bearer' + {paymentBearerToken}
+H: X-Request-ID = {Globally Unique Identifier}
+H: X-BicFi = {bicFi}
+H: PSU-IP-Address = {PSU-IP-Address}
+B: authenticationMethodId = {authenticationMethodId}
+endrnote
+activate obpapi
+|||
+obpapi --> tpp:
+deactivate obpapi
+deactivate tpp
+rnote left of obpapi
+HTTP Response Status: 200 OK
+H: aspsp-sca-approach = 'REDIRECT'
+H: X-Request-ID = '...'
+B: chosenScaMethod (Object)
+B: _links (Object)
+B: scaStatus = 'started'
+endrnote
+
+
+|||
+
+
+
+alt scaOAuth
+
+' Activate OAuth consent authorisation
+tpp -> obpauth: **8. Activate OAuth consent authorisation**\nPOST /connect/token
+activate tpp
+rnote right of tpp
+H: X-ConsentId = {consentId}
+H: X-ConsentAuthorisationId = {consentAuthorisationId}
+B: client_id = {clientId}
+B: client_secret = {clientSecret}
+B: code = {accountInformationCode} (SET through redirect procedure)
+B: redirect_uri = {redirectUri}
+B: scope = 'accountinformation private'
+B: grant_type = 'authorization_code'
+endrnote
+activate obpauth
+|||
+obpauth --> tpp:
+deactivate obpauth
+deactivate tpp
+rnote left of obpauth
+HTTP Response Status: 200 OK
+B: access_token = '...'
+B: expires_in = '3600'
+B: token_type = 'Bearer'
+B: scope = 'accountinformation private'
+endrnote
+
+else scaRedirect
+
+else decoupled
+
+end
+
+|||
+|||
+
+' Get Account List
+tpp -> obpapi: **9_A. Get Account List**\nGET /psd2/accountinformation/v1/accounts?withBalance={{accountsWithBalance}}
+activate tpp
+rnote right of tpp
+P: accountsWithBalance = 'true'
+H: Consent-ID = {consentId}
+H: Authorization = 'Bearer' + {accountBearerToken}
+H: X-Request-ID = {Globally Unique Identifier}
+H: X-BicFi = {bicFi}
+H: PSU-IP-Address = {PSU-IP-Address}
+endrnote
+activate obpapi
+|||
+obpapi --> tpp:
+deactivate obpapi
+deactivate tpp
+rnote left of obpapi
+HTTP Response Status: 200 OK
+H: X-Request-ID = '...'
+B: accounts (Object)
+    * resourceId
+    * iban
+    * bban
+    * name
+    * product
+    * cashAccountType
+    * status
+    * bic
+    * usage
+    * balances (Object)
+    * ownerName
+
+**SET**: {accountId} = accounts[0].resourceId,
+        {paymentCurrency} = accounts[0].currency
+        {debtorAccountCurrency} = accounts[0].balances[0].balanceAmount.currency
+        {debtorIbanOrBban} = accounts[0].iban
+endrnote
+
+
+|||
+
+
+tpp -> tppFrontend: **9_B. Show account data**
+activate tppFrontend
+rnote right of tppFrontend
+Display user account nr,
+currency and amount. 
+endrnote
+activate tpp
+|||
+tppFrontend -> tpp
+deactivate tppFrontend
+deactivate tpp
+
+|||
+|||
+
+
+' Get PAYMENT TOKEN - >>> PIS <<<
+tpp -> obpauth: **10_A: Request Payment Initiation Token**\nPOST /connect/token
+activate tpp
+rnote right of tpp
+B: client_id = {client_id}
+B: client_secret = {client_secret}
+B: grant_type = 'client_credentials'
+B: scope = 'paymentinitiation private'
+endrnote
+activate obpauth
+|||
+obpauth --> tpp:
+deactivate obpauth
+deactivate tpp
+rnote left of obpauth
+HTTP Status: 200 OK
+B: access_token = '...'
+B: expires_in = '3600'
+B: token_type = 'Bearer'
+B: scope = 'paymentinitiation private'
+
+**SET**: {paymentBearerToken} = access_token
+endrnote
+
+
+'|||
+
+
+tpp -> tppFrontend: **10_B. Show message** \n         **'Starting Payment'**
+activate tppFrontend
+activate tpp
+|||
+tppFrontend -> tpp
+deactivate tppFrontend
+deactivate tpp
+
+
+|||
+|||
+
+
+' >>>
+tpp -> obpapi: **11: Create Payment Initiation**\nPOST /psd2/paymentinitiation/v1/{{payment-service}}/{{payment-product}}
+activate tpp
+rnote right of tpp
+Q: payment-service = 'payments'
+Q: payment-product = 'sepa-credit-transfers'
+H: Authorization = 'Bearer' + {paymentBearerToken}
+H: X-Request-ID = {Globally Unique Identifier}
+H: X-BicFi = {bicFi}
+B: instructedAmount (Object)
+B: debtorAccount (Object)
+B: creditorName = {paymentCreditorName}
+B: creditorAccount (Object)
+B: remittanceInformationUnstructured = {remittanceInformationUnstructured}
+endrnote
+activate obpapi
+|||
+obpapi --> tpp:
+deactivate obpapi
+deactivate tpp
+rnote left of obpapi
+HTTP Status: 201 CREATED
+H: X-Request-ID = '...'
+B: transactionStatus = 'RCVD'
+B: paymentId = '...'
+B: _links (Object)
+
+**SET**: {paymentId} = paymentId
+endrnote
+
+
+|||
+|||
+
+
+' >>>
+tpp -> obpapi: **12_A: Start Payment Initiation Authorisation Process**\nPOST /psd2/paymentinitiation/v1/{{payment-service}}/{{payment-product}}/{{paymentId}}/authorisations
+activate tpp
+rnote right of tpp
+Q: payment-service = 'payments'
+Q: payment-product = 'sepa-credit-transfers'
+Q: paymentId = {paymentId}
+H: Authorization = 'Bearer' + {paymentBearerToken}
+H: X-Request-ID = {Globally Unique Identifier}
+H: X-BicFi = {bicFi}
+H: PSU-IP-Address = {PSU-IP-Address}
+endrnote
+activate obpapi
+|||
+obpapi --> tpp:
+deactivate obpapi
+deactivate tpp
+rnote left of obpapi
+HTTP Status: 201 CREATED
+H: X-Request-ID = '...'
+B: authorisationId = '...'
+B: scaStatus = 'recieved'
+B: scaMethods (Object)
+B: _links (Object)
+
+**SET**: {paymentAuthorisationId} = authorisationId, 
+        {paymentAuthenticationMethodId} = scaMethods[0].authenticationMethodId
+endrnote
+
+tpp -> tppFrontend: **12_B. Show message** \n         **'Starting** \n          **Authorization'**
+activate tppFrontend
+activate tpp
+|||
+tppFrontend -> tpp
+deactivate tppFrontend
+deactivate tpp
+
+
+|||
+|||
+
+
+' >>>
+tpp -> obpapi: **13: Update PSU Data for Payment Initiation**\nPUT /psd2/paymentinitiation/v1/{{payment-service}}/{{payment-product}}/{{paymentId}}/authorisations/{{paymentAuthorisationId}}
+activate tpp
+rnote right of tpp
+Q: payment-service = 'payments'
+Q: payment-product = 'sepa-credit-transfers'
+Q: paymentId = {paymentId}
+Q: paymentAuthorisationId
+H: Authorization = 'Bearer' + {paymentBearerToken}
+H: X-Request-ID = {Globally Unique Identifier}
+H: X-BicFi = {bicFi}
+H: PSU-IP-Address = {PSU-IP-Address}
+B: authenticationMethodId = {paymentAuthenticationMethodId}
+endrnote
+activate obpapi
+|||
+obpapi --> tpp:
+deactivate obpapi
+deactivate tpp
+rnote left of obpapi
+HTTP Status: 200 OK
+H: X-Request-ID = '...'
+H: aspsp-sca-approach = 'REDIRECT'
+B: chosenScaMethod (Object)
+B: _links (Object)
+B: scaStatus = 'started'
+endrnote
+
+
+|||
+
+
+' >>>
+alt scaOAuth case
+
+tpp -> obpauth: **14 A: [scaOAuth]**
+activate tpp
+rnote right of obpauth
+endrnote
+activate obpauth
+|||
+obpauth --> tpp:
+deactivate obpauth
+deactivate tpp
+rnote left of obpauth
+endrnote
+
+tpp -> psu: **14 B: [scaOAuth]**
+activate tpp
+rnote right of psu
+endrnote
+activate psu
+|||
+psu --> tpp:
+deactivate psu
+deactivate tpp
+rnote left of psu
+endrnote
+
+else scaRedirect case
+
+' >>>
+tpp -> obpauth: **15A: [scaRedirect]**
+activate tpp
+rnote right of obpauth
+endrnote
+activate obpauth
+|||
+obpauth --> tpp:
+deactivate obpauth
+deactivate tpp
+rnote left of obpauth
+endrnote
+
+' >>>
+tpp -> psu: **15B: [scaRedirect]**
+activate tpp
+rnote right of psu
+endrnote
+activate psu
+|||
+psu --> tpp:
+deactivate psu
+deactivate tpp
+rnote left of psu
+endrnote
+
+
+else decoupled case
+
+' >>>
+tpp -> obpauth: **16A: [decoupled]**
+activate tpp
+rnote right of obpauth
+endrnote
+activate obpauth
+|||
+obpauth --> tpp:
+deactivate obpauth
+deactivate tpp
+rnote left of obpauth
+endrnote
+
+' >>>
+tpp -> psu: **16B: [decoupled]**
+activate tpp
+rnote right of psu
+endrnote
+activate psu
+|||
+psu --> tpp:
+deactivate psu
+deactivate tpp
+rnote left of psu
+endrnote
+
+end
+
+
+|||
+|||
+
+' >>>
+tpp -> obpauth: **17: Activate OAuth payment authorisation**\nPOST /connect/token
+activate tpp
+rnote right of tpp
+H: X-PaymentId = {paymentId}
+H: X-PaymentAuthorisationId = {paymentAuthorisationId}
+B: client_id = {client_id}
+B: client_secret = {client_secret}
+B: code = {paymentInitiationCode}
+B: redirect_uri = {redirectUri}
+B: scope = 'paymentinitiation private'
+B: grant_type = 'authorization_code'
+endrnote
+activate obpauth
+|||
+obpauth --> tpp:
+deactivate obpauth
+deactivate tpp
+rnote left of obpauth
+HTTP Status: 200 OK
+B: access_token = '...'
+B: expires_in = '3600'
+B: token_type = 'Bearer'
+B: scope = 'paymentinitiation private'
+endrnote
+
+
+'|||
+
+tpp -> tppFrontend: **18_A. Display redirect**\n          **link to bank or**\n          **mobile bankID** 
+activate tppFrontend
+rnote right of tppFrontend
+Display user account nr,
+currency and amount. 
+endrnote
+activate tpp
+deactivate tppFrontend
+deactivate tpp
+
+
+tppFrontend -> psu: **18_B. Follow bank** \n          **identification** \n          **process** \n
+activate tppFrontend
+activate psu
+rnote right of psu
+**Action:**
+User completed
+process successfully
+endrnote
+|||
+psu --> tppFrontend:
+deactivate tppFrontend
+deactivate psu
+rnote left of tppFrontend
+**Result:**
+Re-render page and
+display successful
+payment message
+endrnote
+
+|||
+|||
+|||
+
+footer <b>Check SCA status every second.. \n <b>End the process by displaying a successful payment message to the PSU. 
+
+
+@enduml
