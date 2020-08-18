@@ -1,4 +1,4 @@
-# TrustifyOpenPayments
+# OpenPaymentsDemo
 
 - There were three main goals with this application. Firstly, to show customers/companies possible use cases of Open Payment's API. Secondly, to give insight in the API's account and payment procedures. Thirdly, to learn the best practices of user-first approach, scalablity and security. These goals were reached by displaying dynamic content to the user in the front-end, setting up secure and modular environments, and implementing user-friendly functionalities such as a light/dark mode and session-based processes.
 
