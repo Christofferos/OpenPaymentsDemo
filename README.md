@@ -60,7 +60,7 @@
 
 A complete route between client and server is:
 
-- For instance: http://localhost:5000/connect/token. However, the part 'http://localhost:5000' is left out and handled by the package.json (proxy) from the frontend folder:
+- For instance: http://localhost:5000/connect/token. However, the prefix part 'http://localhost:5000' is left out and handled by the package.json (proxy) from the frontend folder:
 - "proxy": "http://localhost:5000"
 
 ##### Tutorial link to Open Payments API - How to get started.
